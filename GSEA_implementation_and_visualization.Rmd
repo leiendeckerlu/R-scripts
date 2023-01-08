@@ -1,0 +1,159 @@
+---
+title: "Notebook"
+date: "10/28/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r message=FALSE, warning=FALSE}
+library(fgsea) # Fast Gene Set Enrichment Analysis
+library(readr) # Read Rectangular Text Data
+library(readxl) # Read Excel Files
+library(ggplot2) # Create Elegant Data Visualisations Using the Grammar of Graphics
+library(ggrepel) # Automatically Position Non-Overlapping Text Labels with 'ggplot2'
+library(dplyr) # A Grammar of Data Manipulation
+#library(conflicted) # An Alternative Conflict Resolution Strategy
+```
+
+
+```{r}
+# read in DE result files for analysis
+HPV42 <- read_xlsx("./data/DESeq2_1.18.1.HPK113_HPV42_VS_HPK113_EV.alpha05.xlsx")
+
+# create pre-ranked input
+HPV42.filtered <- HPV42 %>%  dplyr::filter(padj <= 0.05) %>% select(gene_id, log2FoldChange.shrunk)
+
+# prepare pre-ranked data
+HPV42.ranks <- setNames(HPV42.filtered$log2FoldChange.shrunk, HPV42.filtered$gene_id)
+
+# read in gene set to test enrichment for
+c6.oncogenic.gmt <- gmtPathways("./data/gmt/c6.all.v7.4.symbols.gmt")
+hallmarks.gmt <- gmtPathways("./data/gmt/h.all.v7.4.symbols.gmt")
+
+# run pre-ranked fgsea
+HPV42.hallmarks.fgsea <- fgsea(pathways = hallmarks.gmt, stats = HPV42.ranks, minSize=15, maxSize=500)
+
+# hallmark name formatting
+HPV16.hallmarks.fgsea$pathway<-gsub("HALLMARK_", "", HPV16.hallmarks.fgsea$pathway)
+HPV16.hallmarks.fgsea$pathway<-gsub("_", " ", HPV16.hallmarks.fgsea$pathway)
+HPV16.hallmarks.fgsea$pathway<-tolower(HPV16.hallmarks.fgsea$pathway)
+
+# padj cutoff
+HPV42.hallmarks.fgsea.filtered <- HPV42.hallmarks.fgsea %>% filter(padj <= 0.05)
+HPV42.hallmarks.fgsea.filtered$direction <- ifelse(HPV42.hallmarks.fgsea.filtered$NES < 0, "depleted", "enriched")
+```
+
+
+```{r}
+HPV42.hallmarks.plot.bargraph <- ggplot(HPV42.hallmarks.fgsea.filtered, aes(x=reorder(pathway, +NES), y=NES, label=NES)) +
+                              geom_bar(stat = 'identity', aes(fill=direction), width = .5) +
+                              scale_fill_manual(name= "Normalized Enrichment Score",
+                                                labels = c("Enriched", "Depleted"),
+                                                values = c("enriched"="#00ba38", "depleted"="#f8766d")) +
+                              coord_flip() +
+                              geom_hline(yintercept = 0) +
+                              ylim(-3,3) +
+                              theme_linedraw() +
+                              theme(
+                              legend.title = element_blank(),
+                              panel.grid.major = element_blank(),
+                              panel.grid.minor = element_blank(),
+                              axis.text.x = element_text(vjust = 0.5, hjust=1)
+                              ) +
+                              NULL
+
+HPV42.hallmarks.plot.bargraph
+
+ggsave("./plots/HPV42_GSEA_hallmarks_bargraph.pdf", plot = HPV42.hallmarks.plot.bargraph, width = 5, height = 2)
+```
+
+
+
+```{r}
+HPV42.GSEA.plot.volcano <- ggplot(HPV42.hallmarks.fgsea, aes(x = NES, y = -log10(padj), label = pathway)) +
+                    geom_point(colour = "#CCCCCC", size = 1.75, alpha = 0.8, na.rm = T) + # add gene point
+                    #geom_text(aes( hjust = 0, vjust = 0)) +
+                    #geom_text_repel(min.segment.length = 0, max.overlaps = Inf) +
+                    theme(legend.position = "none") + # remove legend ...
+                    ylab(c("-log10(padj)")) + # x-axis label
+                    #coord_trans(y = "log1p") +
+                    xlab("Normalized Enrichment Score") + # y-axis label
+                    #coord_flip() +
+                    xlim(-3,3) +
+                    theme_linedraw() +
+                    theme(
+                    legend.title = element_blank(),
+                    panel.grid.major = element_blank(),
+                    panel.grid.minor = element_blank(),
+                    axis.text.x = element_text(vjust = 0.5, hjust=1)
+                    ) +
+                    NULL
+
+HPV42.GSEA.plot.volcano
+
+# select dot's for labeling
+HPV42.labeled.up <- HPV42.hallmarks.fgsea %>% top_n(n = 3, wt = NES)
+HPV42.labeled.down <- HPV42.hallmarks.fgsea %>% top_n(n = 3, wt = -NES)
+
+HPV42.GSEA.plot.volcano <- HPV42.GSEA.plot.volcano +
+                    geom_text_repel(data = HPV42.labeled.up, min.segment.length = 0, max.overlaps = Inf)
+
+HPV42.GSEA.plot.volcano <- HPV42.GSEA.plot.volcano +
+                    geom_text_repel(data = HPV42.labeled.down, min.segment.length = 0, max.overlaps = Inf)
+
+HPV42.GSEA.plot.volcano
+
+  
+ggsave("./plots/HPV42_GSEA_hallmarks_volcano.pdf", plot = HPV42.GSEA.plot.volcano, width = 5, height = 5)
+```
+
+
+
+
+```{r}
+# collapse similar pathway terms; reduces pathway hits strongly
+collapsedPathways <- collapsePathways(fgseaRes = test[order(pval)][padj < 0.01],
+                                      pathways = HPV.gmt, 
+                                      stats = ranks)
+
+mainPathways <- test[pathway %in% collapsedPathways$mainPathways][
+                         order(-NES), pathway]
+
+test.mainpathways <- test[test$pathway %in% mainPathways,]
+#test <- test.mainpathways
+```
+
+```{r}
+test$pathway<-gsub("HALLMARK_", "", test$pathway)
+test$pathway<-gsub("_", " ", test$pathway)
+test$pathway<-tolower(test$pathway)
+
+GSEA.plot <- ggplot(test, aes(x = NES, y = -log10(padj), label = pathway)) +
+        geom_point(colour = "#CCCCCC", size = 1.75, alpha = 0.8, na.rm = T) + # add gene point
+        #geom_text(aes( hjust = 0, vjust = 0)) +
+        geom_text_repel(min.segment.length = 0, max.overlaps = Inf) +
+        theme(legend.position = "none") + # remove legend ...
+        #ggtitle(label = "Volcano Plot", subtitle = " ") +  # add title
+        ylab(c("-log10(padj)")) + # x-axis label
+        #coord_trans(y = "log1p") +
+        xlab("Normalized Enrichment Score") + # y-axis label
+        #coord_flip() +
+        xlim(1.0,3) +
+        theme_linedraw() +
+        theme(
+        legend.title = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.text.x = element_text(vjust = 0.5, hjust=1)
+        ) +
+        NULL
+
+GSEA.plot
+
+#ggsave("./plots/GSEA_plot_hallmarks_HPV42E7m2.pdf", GSEA.plot, width = 4, height = 4, dpi = 300)
+
+```

@@ -1,0 +1,41 @@
+---
+title: "Notebook"
+date: "9/16/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# LIBRARIES
+```{r message=FALSE, warning=FALSE}
+library(ggplot2) # Create Elegant Data Visualisations Using the Grammar of Graphics
+library(dplyr) # A Grammar of Data Manipulation
+library(tidyr) # Tidy Messy Data
+library(purrr) # Functional Programming Tools
+library(readr) # Read Rectangular Text Data
+library(reshape2) # Flexibly Reshape Data: A Reboot of the Reshape Package
+library(tidyverse) # Easily Install and Load the 'Tidyverse'
+library(conflicted) # An Alternative Conflict Resolution Strategy
+```
+
+
+```{r}
+# read in coverage data
+mosdepth.DNA <- list.files("./mosdepth_DNA", pattern="*.bed", full.names=TRUE) %>% set_names() %>% map_dfr( ~read_tsv( ., col_names = FALSE, show_col_types = FALSE), .id = "source") %>% mutate(sample = substr(source, 16,100))
+
+colnames(mosdepth.DNA) <- c("source", "genome", "genome_pos1", "genome_pos2", "coverage", "sample")
+
+# remove sites of 0:
+mosdepth.DNA <- as.data.frame(mosdepth.DNA)
+mosdepth.DNA.nonZero <- mosdepth.DNA %>% dplyr::filter(coverage != 0)
+
+# calculate median coverage
+median.DNA <- aggregate(x = mosdepth.DNA.nonZero$coverage,
+                    by = list(mosdepth.DNA.nonZero$sample),
+                    FUN = median)
+
+write_tsv(median.DNA, file = "./export/Median_DNA.tsv")
+```

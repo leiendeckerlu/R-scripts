@@ -1,0 +1,159 @@
+---
+title: "Notebook"
+date: "11/3/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(ggplot2) # Create Elegant Data Visualisations Using the Grammar of Graphics
+library(dplyr) # A Grammar of Data Manipulation
+library(readr) # Read Rectangular Text Data
+library(readxl) # Read Excel Files 
+library(ggrepel) # Automatically Position Non-Overlapping Text Labels with 'ggplot2'
+```
+
+
+```{r}
+# read in BioID data
+bioid_data <- read_xlsx("./data/BioID.xlsx")
+```
+
+```{r}
+# REAC term: G1/S transition:
+# RB1;RBL2;RBL1;LIN54;E2F4;E2F1;LIN9;TFDP2;TFDP1;CABLES1;E2F5;LIN52;CCNA2
+
+G1S_transition <- c("RB1",
+                   "RBL2",
+                   "RBL1",
+                   "LIN54",
+                   "E2F4",
+                   "E2F1",
+                   "LIN9",
+                   "TFDP2",
+                   "TFDP1",
+                   "CABLES1",
+                   "E2F5",
+                   "LIN52",
+                   "CCNA2")
+
+PTPN14 <- c("PTPN14",
+            "WWC2",
+            "LATS1",
+            "LATS2",
+            "AMOT")
+
+G1S_transition.bioid_data <- bioid_data[bioid_data$Gene %in% G1S_transition,]
+PTPN14.bioid_data <- bioid_data[bioid_data$Gene %in% PTPN14,]
+```
+
+
+
+```{r}
+bioid_data.G1S_transition.plot <- ggplot(bioid_data, aes(y = log2fc, x = 1, label = Gene)) +
+                    geom_point(color = "black", alpha = 1/10) +
+                    geom_point(data = G1S_transition.bioid_data, color = "red", alpha = 5/10) +
+                    geom_text_repel(data = G1S_transition.bioid_data,
+                                    force = 0.5, 
+                                    nudge_x = 0.15, 
+                                    direction= "y",
+                                    hjust = 0, 
+                                    segment.size = 0.1) +
+                    ylim(2, 15) +
+                    xlim(1, 1.375) +
+                    ylab("log2FC(HPV42/E7 vs. BirA)") +
+                    theme_linedraw() +
+                    theme(
+                    legend.title = element_blank(),
+                    panel.grid.major = element_blank(),
+                    panel.grid.minor = element_blank(),
+                    axis.line.x  = element_blank(),
+                    axis.ticks.x = element_blank(),
+                    axis.text.x  = element_blank(),
+                    axis.title.x = element_blank()
+                    ) +
+                    NULL
+
+bioid_data.G1S_transition.plot
+
+ggsave("./plots/Lefty_plot_G1S_transition.pdf", bioid_data.G1S_transition.plot, width = 2, height = 4)
+```
+
+```{r}
+bioid_data.PTPN14.plot <- ggplot(bioid_data, aes(y = log2fc, x = 1, label = Gene)) +
+                    geom_point(color = "black", alpha = 1/10) +
+                    geom_point(data = PTPN14.bioid_data, color = "red", alpha = 5/10) +
+                    geom_text_repel(data = PTPN14.bioid_data,
+                                    force = 0.5, 
+                                    nudge_x = 0.15, 
+                                    direction= "y",
+                                    hjust = 0, 
+                                    segment.size = 0.1) +
+                    ylim(2, 15) +
+                    xlim(1, 1.375) +
+                    ylab("log2FC(HPV42/E7 vs. BirA)") +
+                    theme_linedraw() +
+                    theme(
+                    legend.title = element_blank(),
+                    panel.grid.major = element_blank(),
+                    panel.grid.minor = element_blank(),
+                    axis.line.x  = element_blank(),
+                    axis.ticks.x = element_blank(),
+                    axis.text.x  = element_blank(),
+                    axis.title.x = element_blank()
+                    ) +
+                    NULL
+
+bioid_data.PTPN14.plot
+
+ggsave("./plots/Lefty_plot_PTPN14.pdf", bioid_data.PTPN14.plot, width = 2, height = 4)
+```
+
+
+```{r}
+# combined BioID data plot
+
+E7.plot <- ggplot(bioid_data, aes(y = log2fc, x = 1, label = Gene)) +
+                    geom_point(color = "black", alpha = 1/10) +
+                    geom_point(data = G1S_transition.bioid_data, color = "red", alpha = 5/10) +
+                    geom_text_repel(data = G1S_transition.bioid_data,
+                                    force = 0.5, 
+                                    nudge_x = -0.15, 
+                                    direction= "y",
+                                    hjust = 1, 
+                                    segment.size = 0.1) +
+                    ylim(2, 15) +
+                    xlim(0.6, 1.4) +
+                    ylab("log2FC(HPV42/E7 vs. BirA)") +
+                    theme_linedraw() +
+                    theme(
+                    legend.title = element_blank(),
+                    panel.grid.major = element_blank(),
+                    panel.grid.minor = element_blank(),
+                    axis.line.x  = element_blank(),
+                    axis.ticks.x = element_blank(),
+                    axis.text.x  = element_blank(),
+                    axis.title.x = element_blank()
+                    ) +
+                    NULL
+
+
+E7.v2 <- E7.plot + geom_text_repel(data = PTPN14.bioid_data,
+                                    force = 0.5, 
+                                    nudge_x = 0.15, 
+                                    direction= "y",
+                                    hjust = 1, 
+                                    segment.size = 0.1) +
+                geom_point(data = PTPN14.bioid_data, color = "blue", alpha = 5/10) +
+                NULL
+                  
+
+
+E7.v2
+
+ggsave("./plots/Lefty_plot_combined_NM.pdf", E7.v2, width = 5, height = 4)
+```

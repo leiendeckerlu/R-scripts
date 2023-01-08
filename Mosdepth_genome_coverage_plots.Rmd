@@ -1,0 +1,224 @@
+---
+title: "Notebook"
+date: "9/16/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# LIBRARIES
+```{r message=FALSE, warning=FALSE}
+library(ggplot2) # Create Elegant Data Visualisations Using the Grammar of Graphics
+library(dplyr) # A Grammar of Data Manipulation
+library(tidyr) # Tidy Messy Data
+library(purrr) # Functional Programming Tools
+library(readr) # Read Rectangular Text Data
+library(reshape2) # Flexibly Reshape Data: A Reboot of the Reshape Package
+library(tidyverse) # Easily Install and Load the 'Tidyverse'
+library(conflicted) # An Alternative Conflict Resolution Strategy
+```
+
+
+# MOSDEPTH PLOTS
+```{r}
+# define coverage information plots
+mosdepth.filenames <- list.files("./mosdepth_DNA", pattern="*.bed", full.names=TRUE)
+
+# for loop to iterate over mosdepth genome coverage plots
+for(i in mosdepth.filenames){
+
+# parse file name for saving
+mosdepth.filenames.save <- substr(i, 16, 100)   
+   
+# read in mosdepth BED file
+df <- read_tsv(i, col_names = FALSE, show_col_types = FALSE)
+
+# ggplot
+p <- ggplot(data = df, aes(x=X3, y=X4)) +
+      ggtitle(mosdepth.filenames.save) +
+      geom_area(fill = "lightgrey") +
+      #xlab("HPV42 genome") +
+      #ylab("X Fold Coverage") +
+      #scale_x_continuous(breaks = c(0, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000)) +
+      scale_x_continuous(breaks = c(0, 4000, 8000)) +
+      #theme_light() +
+      theme_linedraw() +
+      theme(
+      legend.title = element_blank(),
+      panel.grid.major = element_blank(),
+      panel.grid.minor = element_blank(),
+      axis.title.x = element_blank(),
+      axis.title.y = element_blank()
+      ) +
+      NULL
+
+# save plot  
+ggsave(plot = p, filename = paste0("./plots/", mosdepth.filenames.save, ".pdf"), width = 3, height = 1.75)
+
+}
+```
+
+
+
+
+
+```{r}
+# read in coverage data
+mosdepth.DNA <- list.files("./mosdepth_DNA", pattern="*.bed", full.names=TRUE) %>% set_names() %>% map_dfr( ~read_tsv( ., col_names = FALSE, show_col_types = FALSE), .id = "source") %>% mutate(sample = substr(source, 16,100))
+
+colnames(mosdepth.DNA) <- c("source", "genome", "genome_pos1", "genome_pos2", "coverage", "sample")
+
+# remove sites of 0:
+mosdepth.DNA <- as.data.frame(mosdepth.DNA)
+mosdepth.DNA.nonZero <- mosdepth.DNA %>% dplyr::filter(coverage != 0)
+
+# calculate median coverage
+HPV42.median.DNA <- aggregate(x = mosdepth.DNA.nonZero$coverage,
+                    by = list(mosdepth.DNA.nonZero$sample),
+                    FUN = median)
+
+write_tsv(HPV42.median.DNA, file = "./export/HPV42_median_DNA.tsv")
+```
+
+
+```{r}
+# read in coverage data
+mosdepth.RNA <- list.files("./mosdepth_RNA", pattern="*.bed", full.names=TRUE) %>% set_names() %>% map_dfr( ~read_tsv( ., col_names = FALSE, show_col_types = FALSE), .id = "source") %>% mutate(sample = substr(source, 16,100))
+
+colnames(mosdepth.RNA) <- c("source", "genome", "genome_pos1", "genome_pos2", "coverage", "sample")
+
+# remove sites of 0:
+mosdepth.RNA <- as.data.frame(mosdepth.RNA)
+mosdepth.RNA.nonZero <- mosdepth.RNA %>% dplyr::filter(coverage != 0)
+
+# calculate median coverage
+HPV42.median.RNA <- aggregate(x = mosdepth.RNA.nonZero$coverage,
+                    by = list(mosdepth.RNA.nonZero$sample),
+                    FUN = median)
+
+write_tsv(HPV42.median.RNA, file = "./export/HPV42_median_RNA.tsv")
+```
+
+
+
+```{r}
+# read in coverage data
+mosdepth.DG75 <- list.files("./mosdepth_DG75", pattern="*.bed", full.names=TRUE) %>% set_names() %>% map_dfr( ~read_tsv( ., col_names = FALSE, show_col_types = FALSE), .id = "source") %>% mutate(sample = substr(source, 16,100))
+
+colnames(mosdepth.DG75) <- c("source", "genome", "genome_pos1", "genome_pos2", "coverage", "sample")
+
+# remove sites of 0:
+mosdepth.DG75 <- as.data.frame(mosdepth.DG75)
+mosdepth.DG75.nonZero <- mosdepth.DG75 %>% dplyr::filter(coverage != 0)
+
+# calculate median coverage
+HPV42.median.DG75 <- aggregate(x = mosdepth.DG75.nonZero$coverage,
+                    by = list(mosdepth.DG75.nonZero$sample),
+                    FUN = median)
+
+write_tsv(HPV42.median.DG75, file = "./export/HPV42_median_DG75.tsv")
+```
+
+
+
+
+```{r}
+# read in coverage data
+mosdepth.XMRV <- list.files("./mosdepth_XMRV", pattern="*.bed", full.names=TRUE) %>% set_names() %>% map_dfr( ~read_tsv( ., col_names = FALSE, show_col_types = FALSE), .id = "source") %>% mutate(sample = substr(source, 16,100))
+
+colnames(mosdepth.XMRV) <- c("source", "genome", "genome_pos1", "genome_pos2", "coverage", "sample")
+
+# remove sites of 0:
+mosdepth.XMRV <- as.data.frame(mosdepth.XMRV)
+mosdepth.XMRV.nonZero <- mosdepth.XMRV %>% dplyr::filter(coverage != 0)
+
+# calculate median coverage
+HPV42.median.XMRV <- aggregate(x = mosdepth.XMRV.nonZero$coverage,
+                    by = list(mosdepth.XMRV.nonZero$sample),
+                    FUN = median)
+
+write_tsv(HPV42.median.XMRV, file = "./export/HPV42_median_XMRV.tsv")
+```
+
+
+
+```{r}
+# read in coverage data
+mosdepth.HIV1 <- list.files("./mosdepth_HIV1", pattern="*.bed", full.names=TRUE) %>% set_names() %>% map_dfr( ~read_tsv( ., col_names = FALSE, show_col_types = FALSE), .id = "source") %>% mutate(sample = substr(source, 16,100))
+
+colnames(mosdepth.HIV1) <- c("source", "genome", "genome_pos1", "genome_pos2", "coverage", "sample")
+
+# remove sites of 0:
+mosdepth.HIV1 <- as.data.frame(mosdepth.HIV1)
+mosdepth.HIV1.nonZero <- mosdepth.HIV1 %>% dplyr::filter(coverage != 0)
+
+# calculate median coverage
+HPV42.median.HIV1 <- aggregate(x = mosdepth.HIV1.nonZero$coverage,
+                    by = list(mosdepth.HIV1.nonZero$sample),
+                    FUN = median)
+
+write_tsv(HPV42.median.HIV1, file = "./export/HPV42_median_HIV1.tsv")
+```
+
+
+
+```{r}
+# read in coverage data
+mosdepth.Semliki <- list.files("./mosdepth_Semliki", pattern="*.bed", full.names=TRUE) %>% set_names() %>% map_dfr( ~read_tsv( ., col_names = FALSE, show_col_types = FALSE), .id = "source") %>% mutate(sample = substr(source, 16,100))
+
+colnames(mosdepth.Semliki) <- c("source", "genome", "genome_pos1", "genome_pos2", "coverage", "sample")
+
+# remove sites of 0:
+mosdepth.Semliki <- as.data.frame(mosdepth.Semliki)
+mosdepth.Semliki.nonZero <- mosdepth.Semliki %>% dplyr::filter(coverage != 0)
+
+# calculate median coverage
+HPV42.median.Semliki <- aggregate(x = mosdepth.Semliki.nonZero$coverage,
+                    by = list(mosdepth.Semliki.nonZero$sample),
+                    FUN = median)
+
+write_tsv(HPV42.median.Semliki, file = "./export/HPV42_median_Semliki.tsv")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+# ggplot
+p <- ggplot(data = mosdepth, aes(x=genome_pos2, y=coverage)) +
+      geom_area(fill = "lightgrey") +
+      xlab("HPV42 genome") +
+      ylab("X Fold Coverage") +
+      scale_x_continuous(breaks = c(0, 2000, 4000, 6000, 8000)) +
+                    theme_linedraw() +
+                    theme(
+                    legend.title = element_blank(),
+                    panel.grid.major = element_blank(),
+                    panel.grid.minor = element_blank(),
+                    axis.title.x=element_blank(),
+                    axis.title.y=element_blank(),
+                    axis.text.x=element_blank(),
+                    axis.ticks.x=element_blank()
+                    ) +
+      theme(strip.background =element_rect(fill="white"))+
+      theme(strip.text = element_text(colour = 'black')) +
+      facet_wrap(~ sample, nrow = 5, ncol = 4, scale = "free") +
+      NULL
+
+p
+
+# save plot  
+ggsave(plot = p, filename = "./plots/Combined_coverage.pdf", width = 15, height = 9)
+```

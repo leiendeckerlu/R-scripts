@@ -1,0 +1,72 @@
+---
+title: "Notebook"
+date: "9/15/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r message=FALSE, warning=FALSE}
+library(circlize) # Circular Visualization
+library(readxl) # Read Excel Files
+library(dplyr) # A Grammar of Data Manipulation
+```
+
+
+```{r}
+# define which chromosomes to plot
+chromosome.list <- c("chr1",
+                     "chr2",
+                     "chr3",
+                     "chr4",
+                     "chr5",
+                     "chr6",
+                     "chr7",
+                     "chr8",
+                     "chr9",
+                     "chr10",
+                     "chr11",
+                     "chr12",
+                     "chr13",
+                     "chr14",
+                     "chr15",
+                     "chr16",
+                     "chr17",
+                     "chr18",
+                     "chr19",
+                     "chr20",
+                     "chr21",
+                     "chr22",
+                     "chrX",
+                     "chrY",
+                     "chrHPV42")
+
+
+# read in manually curated Manta integration calls: ALL INTEGRATION SITES PER SAMPLE; NO PRESELECTION
+manta.calls <- read_xlsx("./raw_data/Integration_Sites_merged.xlsx")
+
+# bring data into circlize input format
+start.bed <- manta.calls %>% select(chrONE, startONE, endONE, sample)
+start.bed$startONE <- start.bed$startONE * 100000
+start.bed$endONE <- start.bed$endONE * 100000
+start.bed$endONE <- 791700000 - start.bed$endONE
+start.bed$startONE <- 791700000 - start.bed$startONE
+end.bed <- manta.calls %>% select(chrTWO, startTWO, endTWO, sample)
+
+circos.clear()
+
+# small figure with all integration sites in black
+pdf("./plots/Circos_plot_AllIntegrations_2x2_in_black.pdf", width = 2, height = 2)
+
+circos.initializeWithIdeogram(cytoband = "./data/hg38_genome/cytoBand.txt", chromosome.index = chromosome.list)
+
+# one color for all links
+circos.genomicLink(region1 = start.bed, region2 = end.bed, col = "black")
+# different color for each link
+#circos.genomicLink(region1 = start.bed, region2 = end.bed, col = rand_color(nrow(start.bed)))
+
+dev.off()
+```
